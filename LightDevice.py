@@ -11,7 +11,7 @@ PORT = 1883
 class Light_Device():
     
     # setting up the intensity choices for Smart Light Bulb  
-    _INTENSITY = ["LOW", "HIGH", "MEDIUM", "OFF"]
+    _INTENSITY = ["OFF", "LOW", "HIGH", "MEDIUM"]
 
     def __init__(self, device_id, room):
         # Assigning device level information for each of the devices. 
@@ -50,8 +50,18 @@ class Light_Device():
     # method to process the recieved messages and publish them on relevant topics 
     # this method can also be used to take the action based on received commands
     def _on_message(self, client, userdata, msg):
-        if msg.topic == f"{Topic.REGISTRATION_ACK}/{self._device_id}":
-            print(f"{self._device_id} is connected")
+        if msg.topic == f"{Topic.REGISTRATION_RESP}/{self._device_id}":
+            resp = json.loads(msg.payload)
+            print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {resp['status']}")
+        if msg.topic == Topic.STATUS_REQ:
+            self.client.publish(
+                Topic.STATUS_RESP,
+                payload=json.dumps({
+                    "device_id": self._device_id,
+                    'switch_state': self._get_switch_status(), 
+                    'intensity': self._get_light_intensity()
+                })
+            )
 
     def _on_disconnect(self, client, userdata, rc):
         pass
@@ -66,7 +76,7 @@ class Light_Device():
 
     # Getting the light intensity for the devices
     def _get_light_intensity(self):
-        pass
+        return self._light_intensity
 
     # Setting the light intensity for devices
     def _set_light_intensity(self, light_intensity):
@@ -74,8 +84,9 @@ class Light_Device():
 
     def _subscribe_topics(self):
         self._topics = {
-            f"{Topic.REGISTRATION_ACK}/{self._device_id}",
+            Topic.STATUS_REQ,
+            f"{Topic.REGISTRATION_RESP}/{self._device_id}",
         }
         for topic in self._topics:
             self.client.subscribe(topic)
-        print(f"{self._device_id} subscribes to {self._topics}")
+        # print(f"{self._device_id} subscribes to {self._topics}")

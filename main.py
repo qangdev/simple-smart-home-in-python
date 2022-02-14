@@ -19,14 +19,16 @@ print("Intitate the device creation and registration process." )
 print("\nCreating the Light devices for their respective rooms.")
 light_device_1 = Light_Device("light_1", "Kitchen")
 time.sleep(WAIT_TIME)
-
-# Creating the ac_device  
-print("\nCreating the AC devices for their respective rooms. ")
-ac_device_1 = AC_Device("ac_1", "BR1")
+light_device_2 = Light_Device("light_2", "Kitchen")
 time.sleep(WAIT_TIME)
 
+# # Creating the ac_device  
+# print("\nCreating the AC devices for their respective rooms. ")
+# ac_device_1 = AC_Device("ac_1", "BR1")
+# time.sleep(WAIT_TIME)
+
 # Get status from all connected devices
-print(edge_server_1.get_status('all'))
+print(edge_server_1.get_status())
 
 print("\nSmart Home Simulation stopped.")
 edge_server_1.terminate()
