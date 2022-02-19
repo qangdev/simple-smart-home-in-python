@@ -38,7 +38,7 @@ class AC_Device():
             'room_type': room_type
         }
         self.client.publish(
-            Topic.REGISTRATION_REQ,
+            Topic.REGISTRATION,
             payload=json.dumps(payload)
         )
 

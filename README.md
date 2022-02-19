@@ -4,7 +4,7 @@ Connecting devices to a center server using MQTT and python
 # TODO:
 1. [X] A class for TOPICS
 2. [ ] How to get all status from connected devices
-
+3. [ ] Watch http://www.steves-internet-guide.com/subscribing-topics-mqtt-client/
 ## To balance server and device load.
 For registration and acknowlegdement: 
 Single topic for registration but multilple topics for acknowlegdement

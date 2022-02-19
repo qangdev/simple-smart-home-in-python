@@ -1,5 +1,4 @@
 import time
-from Topics import Topic
 from EdgeServer import Edge_Server
 from LightDevice import Light_Device
 from ACDevice import AC_Device
@@ -18,17 +17,61 @@ time.sleep(WAIT_TIME)
 print("Intitate the device creation and registration process." )
 print("\nCreating the Light devices for their respective rooms.")
 light_device_1 = Light_Device("light_1", "Kitchen")
-time.sleep(WAIT_TIME)
 light_device_2 = Light_Device("light_2", "Kitchen")
+light_device_3 = Light_Device("light_3", "Bedroom")
+light_device_4 = Light_Device("light_4", "Bedroom")
+light_device_5 = Light_Device("light_5", "Bedroom")
 time.sleep(WAIT_TIME)
 
 # # Creating the ac_device  
 # print("\nCreating the AC devices for their respective rooms. ")
 # ac_device_1 = AC_Device("ac_1", "BR1")
 # time.sleep(WAIT_TIME)
-
+print("\n")
+cmd_counter = 1
 # Get status from all connected devices
-print(edge_server_1.get_status())
+
+# print("******************* GETTING THE STATUS BY DEVICE_ID *******************")
+# for device in edge_server_1.get_registered_device_list():
+#     print(f"Status based on device_id: {device['device_id']}")
+#     print(f"Command ID {cmd_counter} request is intiated.")
+#     status = edge_server_1.get_status(unit=device['device_id'])
+#     print(f"Here is the current device-status for {device['device_id']}", status)
+#     print(f"Command ID {cmd_counter} is executed.")
+#     cmd_counter += 1
+
+print("******************* GETTING THE STATUS BY DEVICE_TYPE *******************")
+device_types = {device["device_type"] for device in edge_server_1.get_registered_device_list()}
+for device_type in device_types:
+    print(f"Status based on device type: {device_type}")
+    print(f"Command ID {cmd_counter} request is intiated.")
+    objs = edge_server_1.get_status(device_type=device_type)
+    for obj in objs:
+        print(f"Here is the current device-status for {obj['device_id']}", obj)
+    print(f"Command ID {cmd_counter} is executed.")
+    cmd_counter += 1
+
+
+print("******************* GETTING THE STATUS BY ROOM_TYPE *******************")
+room_types = {device["room_type"] for device in edge_server_1.get_registered_device_list()}
+for room_type in room_types:
+    print(f"Status based on room: type: {room_type}")
+    print(f"Command ID {cmd_counter} request is intiated.")
+    objs = edge_server_1.get_status(room_type=room_type)
+    for obj in objs:
+        print(f"Here is the current device-status for {obj['device_id']}", obj)
+    print(f"Command ID {cmd_counter} is executed.")
+    cmd_counter += 1
+
+
+print("******************* GETTING THE STATUS BY ENTIRE_HOME *******************")
+print(f"Status entire home")
+print(f"Command ID {cmd_counter} request is intiated.")
+objs = edge_server_1.get_status()
+for obj in objs:
+    print(f"Here is the current device-status for {obj['device_id']}", obj)
+print(f"Command ID {cmd_counter} is executed.")
+cmd_counter += 1
 
 print("\nSmart Home Simulation stopped.")
 edge_server_1.terminate()

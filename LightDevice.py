@@ -38,7 +38,7 @@ class Light_Device():
             'room_type': room_type
         }
         self.client.publish(
-            Topic.REGISTRATION_REQ,
+            Topic.REGISTRATION,
             payload=json.dumps(payload)
         )
 
@@ -50,18 +50,38 @@ class Light_Device():
     # method to process the recieved messages and publish them on relevant topics 
     # this method can also be used to take the action based on received commands
     def _on_message(self, client, userdata, msg):
-        if msg.topic == f"{Topic.REGISTRATION_RESP}/{self._device_id}":
+        if msg.topic == f'{Topic.ACKNOWNLEDGEMENT}/{self._device_id}':
             resp = json.loads(msg.payload)
             print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {resp['status']}")
-        if msg.topic == Topic.STATUS_REQ:
+        
+        # Server ask for specific status of all devices
+        # Server ask for specific status of an device in a specific room type
+        # Server ask for specific status of an device by specific device type
+        # Server ask for specific status of an device by id
+        if msg.topic in [
+            f'devices/{self._device_id}/status',
+            f'devices/{self._device_type}/status',
+            f'devices/{self._room_type}/status',
+            f'devices/all/status']:
             self.client.publish(
-                Topic.STATUS_RESP,
+                f"devices/status",
                 payload=json.dumps({
                     "device_id": self._device_id,
                     'switch_state': self._get_switch_status(), 
                     'intensity': self._get_light_intensity()
                 })
             )
+
+    def _subscribe_topics(self):
+        self._topics = {
+            f'devices/{self._device_id}/status',
+            f'devices/{self._device_type}/status',
+            f'devices/{self._room_type}/status',
+            f'devices/all/status',
+            f'{Topic.ACKNOWNLEDGEMENT}/{self._device_id}',
+        }
+        for topic in self._topics:
+            self.client.subscribe(topic)
 
     def _on_disconnect(self, client, userdata, rc):
         pass
@@ -81,12 +101,3 @@ class Light_Device():
     # Setting the light intensity for devices
     def _set_light_intensity(self, light_intensity):
         pass    
-
-    def _subscribe_topics(self):
-        self._topics = {
-            Topic.STATUS_REQ,
-            f"{Topic.REGISTRATION_RESP}/{self._device_id}",
-        }
-        for topic in self._topics:
-            self.client.subscribe(topic)
-        # print(f"{self._device_id} subscribes to {self._topics}")
