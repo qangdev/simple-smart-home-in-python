@@ -13,6 +13,10 @@ class Light_Device():
     # setting up the intensity choices for Smart Light Bulb  
     _INTENSITY = ["OFF", "LOW", "HIGH", "MEDIUM"]
 
+    TOPIC_REGISTRATION = []
+    TOPIC_STATUS = []
+    TOPIC_CONTROLLING = []
+
     def __init__(self, device_id, room):
         # Assigning device level information for each of the devices. 
         self._device_id = device_id
@@ -29,7 +33,7 @@ class Light_Device():
         self.client.loop_start()
         self._register_device(self._device_id, self._room_type, self._device_type)
         self._switch_status = "OFF"
-
+    
     def _register_device(self, device_id, room_type, device_type):
         # During creation of the device, implement a call to the server to register itself
         payload = {
@@ -45,24 +49,37 @@ class Light_Device():
     # Connect method to subscribe to various topics. 
     def _on_connect(self, client, userdata, flags, result_code):
         # Subscribe to topics once the device is connected to MQTT broker
+        '''
+        Topics are grouped into sub-topics
+        '''
+        self.TOPIC_REGISTRATION = [
+            f'{Topic.ACKNOWNLEDGEMENT}/{self._device_id}'
+        ]
+        self.TOPIC_STATUS = [
+            f'devices/{self._device_id}/status',
+            f'devices/{self._device_type}/status',
+            f'devices/{self._room_type}/status',
+            f'devices/all/status'
+        ]
+        self.TOPIC_CONTROLLING = [
+            f'devices/{self._device_id}/state/+',
+            f'devices/{self._device_id}/intensity/+',
+            f'devices/{self._device_type}/state/+',
+            f'devices/{self._device_type}/intensity/+',
+            f'devices/{self._room_type}/state/+',
+            f'devices/{self._room_type}/intensity/+',
+            f'devices/all/state/+',
+            f'devices/all/intensity/+'
+        ]
         self._subscribe_topics()
 
     # method to process the recieved messages and publish them on relevant topics 
     # this method can also be used to take the action based on received commands
     def _on_message(self, client, userdata, msg):
-        if msg.topic == f'{Topic.ACKNOWNLEDGEMENT}/{self._device_id}':
+        if msg.topic == self.TOPIC_REGISTRATION:
             resp = json.loads(msg.payload)
             print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {resp['status']}")
-        
-        # Server ask for specific status of all devices
-        # Server ask for specific status of an device in a specific room type
-        # Server ask for specific status of an device by specific device type
-        # Server ask for specific status of an device by id
-        if msg.topic in [
-            f'devices/{self._device_id}/status',
-            f'devices/{self._device_type}/status',
-            f'devices/{self._room_type}/status',
-            f'devices/all/status']:
+        elif msg.topic in self.TOPIC_STATUS:
             self.client.publish(
                 f"devices/status",
                 payload=json.dumps({
@@ -71,16 +88,11 @@ class Light_Device():
                     'intensity': self._get_light_intensity()
                 })
             )
+        elif msg.topic in self.TOPIC_CONTROLLING:
+            print("HELLO TAO NE")
 
     def _subscribe_topics(self):
-        self._topics = {
-            f'devices/{self._device_id}/status',
-            f'devices/{self._device_type}/status',
-            f'devices/{self._room_type}/status',
-            f'devices/all/status',
-            f'{Topic.ACKNOWNLEDGEMENT}/{self._device_id}',
-        }
-        for topic in self._topics:
+        for topic in self.TOPIC_REGISTRATION + self.TOPIC_STATUS + self.TOPIC_CONTROLLING:
             self.client.subscribe(topic)
 
     def _on_disconnect(self, client, userdata, rc):
