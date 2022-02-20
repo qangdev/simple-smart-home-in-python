@@ -5,19 +5,23 @@ Connecting devices to a center server using MQTT and python
 1. [D] A class for TOPICS
 2. [C] How to get all status from connected devices
 3. [D] Watch http://www.steves-internet-guide.com/subscribing-topics-mqtt-client/
-4. [ ] Make topic constants for EdgeServer
-5. [ ] Controlling On/Off by ID
+4. [D] Make topic constants for EdgeServer
+5. [D] Controlling On/Off by ID
 6. [ ] Controlling On/Off by Device Type
 7. [ ] Controlling On/Off by Room Type
 8. [ ] Controlling On/Off fot entire house
 9. [ ] Controlling Light intensity by ID
 10. [ ] Controlling Light intensity by Room Type
 11. [ ] Controlling Light intensity for entire house
-12. [ ] Controlling AC temperature by ID
-13. [ ] Controlling AC temperature by Room Type
-14. [ ] Controlling AC temperature for entire house
+12. [ ] Get status AC by ID
+13. [ ] Get status AC by device type
+14. [ ] Get status AC by room type
+15. [ ] Get status AC for entire house 
+16. [ ] Controlling AC temperature by ID
+17. [ ] Controlling AC temperature by Room Type
+18. [ ] Controlling AC temperature for entire house
 
-
+zzzzzzzzzzzzzzzzzzzzzzzz
 ## To balance server and device load.
 For registration and acknowlegdement: 
 Single topic for registration but multilple topics for acknowlegdement

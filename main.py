@@ -1,3 +1,4 @@
+import cmd
 import time
 from EdgeServer import Edge_Server
 from LightDevice import Light_Device
@@ -6,6 +7,18 @@ from ACDevice import AC_Device
 WAIT_TIME = 0.25
 
 
+'''
+ROOM_*: It's little bakward but it helps to make ROOM constants more consistency
+'''
+ROOM_KITCHEN = 'KITCHEN'
+ROOM_LIVING = 'LIVING'
+ROOM_BATH = "BATH"
+
+'''
+DEVICE_TYPE_*
+'''
+DEVICE_TYPE_LIGHT = "LIGHT"
+DEVICE_TYPE_AC = "AC"
 
 print("\nSmart Home Simulation started.")
 # Creating the edge-server for the communication with the user
@@ -16,11 +29,16 @@ time.sleep(WAIT_TIME)
 # Creating the light_device
 print("Intitate the device creation and registration process." )
 print("\nCreating the Light devices for their respective rooms.")
-light_device_1 = Light_Device("light_1", "Kitchen")
-light_device_2 = Light_Device("light_2", "Kitchen")
-light_device_3 = Light_Device("light_3", "Bedroom")
-light_device_4 = Light_Device("light_4", "Bedroom")
-light_device_5 = Light_Device("light_5", "Bedroom")
+print("******************* REGSITRATION OF THE DEVICES THROUGH SERVER *******************")
+light_device_1 = Light_Device("light_1", ROOM_KITCHEN)
+time.sleep(WAIT_TIME)
+light_device_2 = Light_Device("light_2", ROOM_KITCHEN)
+time.sleep(WAIT_TIME)
+light_device_3 = Light_Device("light_3", ROOM_LIVING)
+time.sleep(WAIT_TIME)
+light_device_4 = Light_Device("light_4", ROOM_LIVING)
+time.sleep(WAIT_TIME)
+light_device_5 = Light_Device("light_5", ROOM_BATH)
 time.sleep(WAIT_TIME)
 
 # # Creating the ac_device  
@@ -68,6 +86,24 @@ print("******************* GETTING THE STATUS BY ENTIRE_HOME *******************
 print(f"Status entire home")
 print(f"Command ID {cmd_counter} request is intiated.")
 objs = edge_server_1.get_status()
+for obj in objs:
+    print(f"Here is the current device-status for {obj['device_id']}", obj)
+print(f"Command ID {cmd_counter} is executed.")
+cmd_counter += 1
+
+print("******************* SETTING UP THE STATUS AND CONTROLLING THE DEVICE_ID *******************")
+for device in edge_server_1.get_registered_device_list():
+    print('Controlling the devices based on ID:', device['device_id'])
+    print(f'Command ID {cmd_counter} request is initiated.')
+    objs = edge_server_1.set(unit=device['device_id'], switch_state="ON")
+    for obj in objs:
+        print(f"Here is the current device-status for {obj['device_id']}", obj)
+    print(f"Command ID {cmd_counter} is executed.")
+    cmd_counter += 1
+
+print('******************* SETTING UP THE STATUS AND CONTROLLING BY THE DEVICE_TYPE *******************')
+print(f'Controlling the devices based on TYPE: {DEVICE_TYPE_LIGHT}')
+objs = edge_server_1.set(device_type=DEVICE_TYPE_LIGHT, switch_state="OFF")
 for obj in objs:
     print(f"Here is the current device-status for {obj['device_id']}", obj)
 print(f"Command ID {cmd_counter} is executed.")

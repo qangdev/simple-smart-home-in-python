@@ -13,9 +13,10 @@ class Light_Device():
     # setting up the intensity choices for Smart Light Bulb  
     _INTENSITY = ["OFF", "LOW", "HIGH", "MEDIUM"]
 
-    TOPIC_REGISTRATION = []
+    TOPIC_ACKNOWNLEDGEMENT = []
     TOPIC_STATUS = []
-    TOPIC_CONTROLLING = []
+    TOPIC_CONTROLLING_STATE = []
+    TOPIC_CONTROLLING_INTENSITY = []
 
     def __init__(self, device_id, room):
         # Assigning device level information for each of the devices. 
@@ -52,8 +53,8 @@ class Light_Device():
         '''
         Topics are grouped into sub-topics
         '''
-        self.TOPIC_REGISTRATION = [
-            f'{Topic.ACKNOWNLEDGEMENT}/{self._device_id}'
+        self.TOPIC_ACKNOWNLEDGEMENT = [
+            f'devices/acknownledgement/{self._device_id}'
         ]
         self.TOPIC_STATUS = [
             f'devices/{self._device_id}/status',
@@ -61,38 +62,48 @@ class Light_Device():
             f'devices/{self._room_type}/status',
             f'devices/all/status'
         ]
-        self.TOPIC_CONTROLLING = [
-            f'devices/{self._device_id}/state/+',
-            f'devices/{self._device_id}/intensity/+',
-            f'devices/{self._device_type}/state/+',
-            f'devices/{self._device_type}/intensity/+',
-            f'devices/{self._room_type}/state/+',
-            f'devices/{self._room_type}/intensity/+',
-            f'devices/all/state/+',
-            f'devices/all/intensity/+'
+        self.TOPIC_CONTROLLING_STATE = [
+            f'devices/{self._device_id}/state',
+            f'devices/{self._device_type}/state',
+            f'devices/{self._room_type}/state',
+            f'devices/all/state'
+        ]
+        self.TOPIC_CONTROLLING_INTENSITY = [
+            f'devices/{self._device_id}/intensity',
+            f'devices/{self._device_type}/intensity',
+            f'devices/{self._room_type}/intensity',
+            f'devices/all/intensity'
         ]
         self._subscribe_topics()
 
     # method to process the recieved messages and publish them on relevant topics 
     # this method can also be used to take the action based on received commands
     def _on_message(self, client, userdata, msg):
-        if msg.topic == self.TOPIC_REGISTRATION:
-            resp = json.loads(msg.payload)
-            print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {resp['status']}")
+        if msg.topic in self.TOPIC_ACKNOWNLEDGEMENT:
+            obj = json.loads(msg.payload)
+            print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {obj['status']}")
         elif msg.topic in self.TOPIC_STATUS:
             self.client.publish(
                 f"devices/status",
-                payload=json.dumps({
-                    "device_id": self._device_id,
-                    'switch_state': self._get_switch_status(), 
-                    'intensity': self._get_light_intensity()
-                })
+                payload=json.dumps(self.get_current_status())
             )
-        elif msg.topic in self.TOPIC_CONTROLLING:
-            print("HELLO TAO NE")
+        elif msg.topic in self.TOPIC_CONTROLLING_STATE:
+            obj = json.loads(msg.payload)
+            self._set_switch_status(obj["switch_state"])
+            self.client.publish(
+                f"devices/status",
+                payload=json.dumps(self.get_current_status())
+            )
+        elif msg.topic in self.TOPIC_CONTROLLING_INTENSITY:
+            obj = json.loads(msg.payload)
+            self._set_light_intensity(obj["intensity"])
+            self.client.publish(
+                f"devices/status",
+                payload=json.dumps(self.get_current_status())
+            )
 
     def _subscribe_topics(self):
-        for topic in self.TOPIC_REGISTRATION + self.TOPIC_STATUS + self.TOPIC_CONTROLLING:
+        for topic in self.TOPIC_ACKNOWNLEDGEMENT + self.TOPIC_STATUS + self.TOPIC_CONTROLLING_INTENSITY + self.TOPIC_CONTROLLING_STATE:
             self.client.subscribe(topic)
 
     def _on_disconnect(self, client, userdata, rc):
@@ -104,7 +115,7 @@ class Light_Device():
 
     # Setting the the switch of devices
     def _set_switch_status(self, switch_state):
-        pass
+        self._switch_status = switch_state
 
     # Getting the light intensity for the devices
     def _get_light_intensity(self):
@@ -112,4 +123,11 @@ class Light_Device():
 
     # Setting the light intensity for devices
     def _set_light_intensity(self, light_intensity):
-        pass    
+        self._light_intensity = light_intensity    
+
+    def get_current_status(self):
+        return {
+            "device_id": self._device_id,
+            'switch_state': self._get_switch_status(), 
+            'intensity': self._get_light_intensity()
+        }
