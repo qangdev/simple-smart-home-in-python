@@ -1,11 +1,19 @@
 from email import message
 import json
 import paho.mqtt.client as mqtt
-
 from Topics import Topic
+
 
 HOST = "localhost"
 PORT = 1883
+
+
+class IntensityValueError(Exception):
+    pass
+
+
+class SwitchStateValueError(Exception):
+    pass
 
 
 class Light_Device():
@@ -54,25 +62,25 @@ class Light_Device():
         Topics are grouped into sub-topics
         '''
         self.TOPIC_ACKNOWNLEDGEMENT = [
-            f'devices/acknownledgement/{self._device_id}'
+            Topic.ACKNOWNLEDGEMENT.format(target=self._device_id)
         ]
         self.TOPIC_STATUS = [
-            f'devices/{self._device_id}/status',
-            f'devices/{self._device_type}/status',
-            f'devices/{self._room_type}/status',
-            f'devices/all/status'
+            Topic.REQUEST_STATUS.format(target=self._device_id),
+            Topic.REQUEST_STATUS.format(target=self._device_type),
+            Topic.REQUEST_STATUS.format(target=self._room_type),
+            Topic.REQUEST_STATUS.format(target='all')
         ]
         self.TOPIC_CONTROLLING_STATE = [
-            f'devices/{self._device_id}/state',
-            f'devices/{self._device_type}/state',
-            f'devices/{self._room_type}/state',
-            f'devices/all/state'
+            Topic.SETTING_STATE.format(target=self._device_id),
+            Topic.SETTING_STATE.format(target=self._device_type),
+            Topic.SETTING_STATE.format(target=self._room_type),
+            Topic.SETTING_STATE.format(target='all')
         ]
         self.TOPIC_CONTROLLING_INTENSITY = [
-            f'devices/{self._device_id}/intensity',
-            f'devices/{self._device_type}/intensity',
-            f'devices/{self._room_type}/intensity',
-            f'devices/all/intensity'
+            Topic.SETTING_INTENSITY.format(target=self._device_id),
+            Topic.SETTING_INTENSITY.format(target=self._device_type),
+            Topic.SETTING_INTENSITY.format(target=self._room_type),
+            Topic.SETTING_INTENSITY.format(target='all')
         ]
         self._subscribe_topics()
 
@@ -80,27 +88,31 @@ class Light_Device():
     # this method can also be used to take the action based on received commands
     def _on_message(self, client, userdata, msg):
         if msg.topic in self.TOPIC_ACKNOWNLEDGEMENT:
-            obj = json.loads(msg.payload)
-            print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {obj['status']}")
+            self._device_registration_flag = True
+            print(f"LIGHT-DEVICE Registered! - Registration status is available for '{self._device_id}': {self._device_registration_flag}")
         elif msg.topic in self.TOPIC_STATUS:
             self.client.publish(
-                f"devices/status",
+                Topic.RESPONSE_STATUS,
                 payload=json.dumps(self.get_current_status())
             )
         elif msg.topic in self.TOPIC_CONTROLLING_STATE:
-            obj = json.loads(msg.payload)
-            self._set_switch_status(obj["switch_state"])
-            self.client.publish(
-                f"devices/status",
-                payload=json.dumps(self.get_current_status())
-            )
+            try:
+                obj = json.loads(msg.payload)
+                self._set_switch_status(obj["switch_state"])
+            except SwitchStateValueError as e:
+                self.client.publish(
+                    Topic.SETTING_EXCEPTION,
+                    payload=json.dumps({'message': str(e)})
+                )
         elif msg.topic in self.TOPIC_CONTROLLING_INTENSITY:
-            obj = json.loads(msg.payload)
-            self._set_light_intensity(obj["intensity"])
-            self.client.publish(
-                f"devices/status",
-                payload=json.dumps(self.get_current_status())
-            )
+            try:
+                obj = json.loads(msg.payload)
+                self._set_light_intensity(obj["intensity"])
+            except IntensityValueError as e:
+                self.client.publish(
+                    Topic.SETTING_EXCEPTION,
+                    payload=json.dumps({'message': str(e)})
+                )
 
     def _subscribe_topics(self):
         for topic in self.TOPIC_ACKNOWNLEDGEMENT + self.TOPIC_STATUS + self.TOPIC_CONTROLLING_INTENSITY + self.TOPIC_CONTROLLING_STATE:
@@ -115,6 +127,8 @@ class Light_Device():
 
     # Setting the the switch of devices
     def _set_switch_status(self, switch_state):
+        if switch_state not in ["ON", "OFF"]:
+            raise SwitchStateValueError(f'Switch state FAIED, {switch_state} is an invalid state for device {self._device_id}')
         self._switch_status = switch_state
 
     # Getting the light intensity for the devices
@@ -123,6 +137,8 @@ class Light_Device():
 
     # Setting the light intensity for devices
     def _set_light_intensity(self, light_intensity):
+        if light_intensity not in self._INTENSITY:
+            raise IntensityValueError(f'Intensity Change FAILED. f{light_intensity} is an invalid Light Intensity level received for device {self._device_id}')
         self._light_intensity = light_intensity    
 
     def get_current_status(self):

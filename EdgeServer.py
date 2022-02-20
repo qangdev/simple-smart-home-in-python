@@ -3,8 +3,8 @@ from itertools import count
 import json
 import time
 import paho.mqtt.client as mqtt
- 
 from Topics import Topic
+
 
 
 HOST = "localhost"
@@ -14,6 +14,7 @@ WAIT_TIME = 0.5
 class Edge_Server:
 
     TOPIC_STATUS = []
+    TOPIC_EXCEPT = []
     TOPIC_REGISTRATION = []
     
     def __init__(self, instance_name):
@@ -39,10 +40,13 @@ class Edge_Server:
         Topics are grouped into sub-topics
         '''
         self.TOPIC_REGISTRATION = [
-            'devices/registration'
+            Topic.REGISTRATION
         ]
         self.TOPIC_STATUS = [
-            f'devices/status',
+            Topic.RESPONSE_STATUS
+        ]
+        self.TOPIC_EXCEPT = [
+            Topic.SETTING_EXCEPTION
         ]
         self._subscribe_topics()
     
@@ -57,18 +61,18 @@ class Edge_Server:
         elif msg.topic in self.TOPIC_STATUS:
             resp = json.loads(msg.payload)
             self.devices_status.append(resp)
+        elif msg.topic in self.TOPIC_EXCEPT:
+            resp = json.loads(msg.payload)
+            print(resp['message'])
 
     def _subscribe_topics(self):
-        for topic in self.TOPIC_STATUS + self.TOPIC_REGISTRATION:
+        for topic in self.TOPIC_STATUS + self.TOPIC_REGISTRATION + self.TOPIC_EXCEPT:
             self.client.subscribe(topic)
 
     def _resgister_device(self, device):
         self._registered_list.append(device)
         self.client.publish(
-            f'devices/acknownledgement/{device["device_id"]}',
-            payload=json.dumps({
-                "status": device in self._registered_list 
-            })
+            Topic.ACKNOWNLEDGEMENT.format(target=device["device_id"])
         )
 
     # Returning the current registered list
@@ -86,20 +90,22 @@ class Edge_Server:
         Step 2: Get new status based on given param
         '''
         if unit:
-            self.client.publish(f'devices/{unit}/status')
+            target = unit
         elif device_type:
-            self.client.publish(f'devices/{device_type}/status')
+            target = device_type
         elif room_type:
-            self.client.publish(f'devices/{room_type}/status')
+            target = room_type
         else:
-            self.client.publish(f'devices/all/status')
+            target = 'all'
+        self.client.publish(Topic.REQUEST_STATUS.format(target=target))
         time.sleep(WAIT_TIME)
         
         return self.devices_status
 
     # Controlling and performing the operations on the devices
     # based on the request received
-    def set(self, unit=None, device_type=None, room_type=None, switch_state=None, intensity=None):
+    def set(self, unit=None, device_type=None, room_type=None, 
+            switch_state=None, intensity=None, temperature=None):
         '''
         Step 1: Clear old status
         '''
@@ -109,19 +115,26 @@ class Edge_Server:
         Step 2: Publish request
         '''
         if unit:
-            topic = f'devices/{unit}/' + 'state' if switch_state else 'intensity' 
+            topic = f'devices/{unit}' 
         elif device_type:
-            topic = f'devices/{device_type}/' + 'state' if switch_state else 'intensity'
+            topic = f'devices/{device_type}'
         elif room_type:
-            topic = f'devices/{room_type}/' + 'state' if switch_state else 'intensity'
+            topic = f'devices/{room_type}'
         else:
-            topic = f'devices/all/' + 'state' if switch_state else 'intensity'
+            topic = f'devices/all'
+        
         payload = {}
         if switch_state:
+            topic += f'/state'
             payload["switch_state"] = switch_state
-        if intensity:
+        elif intensity:
+            topic += f'/intensity'
             payload["intensity"] = intensity
+        elif temperature:
+            topic += f'/temperature'
+            payload["temperature"] = temperature
+
         self.client.publish(topic, payload=json.dumps(payload))
         time.sleep(WAIT_TIME)
 
-        return self.devices_status
+        return self.get_status(unit=unit, device_type=device_type, room_type=room_type)
