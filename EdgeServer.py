@@ -26,7 +26,6 @@ class Edge_Server:
         self.client.loop_start()
         self.devices_status = []
         self._registered_list = []
-        self._topics = set()
 
     # Terminating the MQTT broker and stopping the execution
     def terminate(self):

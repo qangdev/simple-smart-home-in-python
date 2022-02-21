@@ -31,7 +31,6 @@ class AC_Device():
         self._temperature = 22
         self._device_type = "AC"
         self._device_registration_flag = False
-        self._topics = set()
         self.client = mqtt.Client(self._device_id)  
         self.client.on_connect = self._on_connect  
         self.client.on_message = self._on_message  

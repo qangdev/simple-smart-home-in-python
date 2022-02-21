@@ -20,17 +20,29 @@ Connecting devices to a center server using MQTT and python
 16. [D] Controlling AC temperature by ID
 17. [D] Controlling AC temperature by Room Type
 18. [D] Controlling AC temperature for entire house
-19. Make sample use cases
-20. Update ReadMe to explain how this work
+19. [ ] Make sample use cases
+20. [ ] Update ReadMe to explain how this work
+21. [ ] What to do on disconnection?
+22. [ ] 
 
-zzzzzzzzzzzzzzzzzzzzzzzz
-## To balance server and device load.
+
+## Topics Design
+
+To balance server and device load requesting topics from service to devices such as get current temperature of an AC. But there common topics for devices to send response to the server.
+As the result devices won;t getting a lot of unnecessary information
+
 For registration and acknowlegdement: 
-Single topic for registration but multilple topics for acknowlegdement
+Single topic for registration: `devices/registration`
+
+But multilple topics for acknowlegdement: `devices/acknownledgement/<device_id>`
+
 
 e.g: Server is running and it subscribe to `/registration/request` topic.Then *Light_1* device is added and it will send a registration request to the Server with same topic.
 Then the server will catch that request and then append the device to its device list. Finally the server will send back to *Light_1* device an acknowlegdement response using a private topic just for that device by put the device's id to the topic `/registration/acknowledge/light_1`. 
 *Light_1* also subscribe to `/registration/acknowledge/light_1` so it can receive the acknowlegdement from the server to indicate the connection between them is open.
 
+
+## Use Cases
+1. 
 ## Resource
 1. https://pypi.org/project/paho-mqtt/
